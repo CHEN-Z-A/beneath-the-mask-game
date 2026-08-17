@@ -281,7 +281,7 @@ const Data = {
       { speaker: 'cancun', text: '这一次，不要只追随最显眼的表情。' }
     ],
     scanConfig: {
-      totalFragments: 4, eyeMoveInterval: 2300, idleHintAfter: 45000, revealTargetName: false,
+      totalFragments: 4, eyeMoveInterval: 2300, idleHintAfter: 45000, revealTargetName: true,
       fragments: [
         { id: 'f_eyebrow', name: '舒展眉片', emotionCue: '镇定', targetOrder: 4 },
         { id: 'f_eye', name: '弯眼碎片', emotionCue: '友善', targetOrder: 2 },
@@ -379,7 +379,7 @@ const Data = {
       { speaker: 'cancun', text: '这一次，你要在最少的表情线索里，忍住过早判断。' }
     ],
     scanConfig: {
-      totalFragments: 4, eyeMoveInterval: 2100, idleHintAfter: 40000, revealTargetName: false,
+      totalFragments: 4, eyeMoveInterval: 2100, idleHintAfter: 40000, revealTargetName: true,
       fragments: [
         { id: 'f_eyebrow', name: '平直眉片', emotionCue: '平静', targetOrder: 2 },
         { id: 'f_eye', name: '垂目眼片', emotionCue: '回避', targetOrder: 4 },

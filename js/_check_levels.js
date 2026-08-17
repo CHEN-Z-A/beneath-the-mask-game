@@ -37,6 +37,7 @@ Data.LEVEL_ORDER.forEach((id, index) => {
   check(JSON.stringify(stageNames) === JSON.stringify(requiredStages), `${id} 必须包含顺序正确的六阶段`);
   check((level.initDialogue || []).length >= 3, `${id} 的委托对话不足`);
   check((level.scanConfig?.fragments || []).length === 4, `${id} 必须有四块扫描碎片`);
+  check(level.scanConfig?.revealTargetName === true, `${id} 扫描阶段必须显示当前目标碎片名称`);
   check((level.assembleConfig?.slots || []).length === 4, `${id} 必须有四个拼合槽位`);
   check(!!level.assembleConfig?.summary, `${id} 缺少复原总结`);
 
