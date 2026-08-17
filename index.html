@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1c130a">
+  <title>面具之下 · Beneath the Mask</title>
+  <link rel="icon" href="assets/sanxingdui-head.png" type="image/png">
+<link rel="stylesheet" href="css/style.css?v=5.3">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ 封面 ============ -->
+  <div id="cover" class="screen">
+    <div class="cover-decor"></div>
+    <div class="cover-halo"></div>
+    <div class="cover-art" id="cover-art"></div>
+    <div class="cover-head">
+      <h1 class="cover-title">面具之下</h1>
+      <p class="cover-sub">BENEATH THE MASK · 读懂面具背后的故事</p>
+    </div>
+    <p class="cover-quote">「面具之下，藏着另一颗心」</p>
+    <button class="btn btn-cover" id="btn-cover-enter">
+      <span>进入修复大殿</span>
+      <span class="cover-enter-arrow">▼</span>
+    </button>
+    <footer class="cover-foot">三星堆 · 古蜀秘境 · 心智探秘之旅</footer>
+  </div>
+
+  <!-- ============ 大厅 ============ -->
+  <div id="lobby" class="screen hidden">
+    <div class="lobby-decor"></div>
+    <header class="lobby-header">
+      <div class="lobby-mask" id="lobby-mask"></div>
+      <h1 class="lobby-title">面具之下</h1>
+      <p class="lobby-sub">Beneath the Mask · 读懂面具背后的故事</p>
+    </header>
+
+    <div class="lobby-panel">
+      <div class="lobby-player">
+        <label for="player-name">修复师之名</label>
+        <input type="text" id="player-name" maxlength="12" placeholder="输入你的名字">
+      </div>
+
+      <div class="lobby-stats" id="lobby-stats"></div>
+
+      <div class="lobby-levels" id="lobby-levels"></div>
+    </div>
+
+    <footer class="lobby-footer">
+      <div class="lobby-footer-row">
+        <button class="btn btn-ghost" id="btn-back-cover">返回封面</button>
+        <button class="btn btn-ghost" id="btn-settings-lobby">感官设置</button>
+      </div>
+      <span class="lobby-tip">四面面具 · 六阶段情绪探秘 · 剧情为三星堆文化启发的教育性艺术想象</span>
+    </footer>
+  </div>
+
+  <!-- ============ 游戏主界面 ============ -->
+  <div id="game" class="screen hidden">
+    <div id="game-bg" class="bg-shrine"></div>
+
+    <!-- 顶部 HUD -->
+    <div id="hud">
+      <button class="hud-btn" id="btn-exit" title="返回大厅">⌂ 大厅</button>
+      <div id="hud-center">
+        <span id="hud-level-title">面具之下</span>
+        <span id="hud-stage-label">委托接收</span>
+      </div>
+      <button class="hud-btn" id="btn-settings">感官设置</button>
+    </div>
+
+    <!-- 阶段内容容器 -->
+    <div id="stage-root"></div>
+
+    <!-- 对话系统 -->
+    <div id="dialogue-box" class="hidden">
+      <div id="dialogue-avatar"></div>
+      <div id="dialogue-main">
+        <div id="dialogue-speaker"></div>
+        <div id="dialogue-text"></div>
+        <div id="dialogue-hint">点击页面继续</div>
+      </div>
+      <div id="dialogue-next">▼</div>
+    </div>
+  </div>
+
+  <!-- ============ 感官设置面板 ============ -->
+  <div id="settings-panel" class="hidden">
+    <div class="settings-card">
+      <h2 class="settings-title">感官设置</h2>
+      <div class="setting-row">
+        <span>简化动画</span>
+        <span class="desc">翻转、转场使用瞬间切换</span>
+        <label class="toggle"><input type="checkbox" data-setting="simplifyAnim"><i></i></label>
+      </div>
+      <div class="setting-row">
+        <span>静音</span>
+        <span class="desc">关闭全部音效</span>
+        <label class="toggle"><input type="checkbox" data-setting="muteSound"><i></i></label>
+      </div>
+      <div class="setting-row">
+        <span>高对比</span>
+        <span class="desc">增强轮廓与文字对比度</span>
+        <label class="toggle"><input type="checkbox" data-setting="highContrast"><i></i></label>
+      </div>
+      <div class="setting-row">
+        <span>无时限</span>
+        <span class="desc">取消阶段时间压力</span>
+        <label class="toggle"><input type="checkbox" data-setting="noTimeLimit"><i></i></label>
+      </div>
+      <div class="setting-row">
+        <span>文字优先</span>
+        <span class="desc">关键信息始终显示文字</span>
+        <label class="toggle"><input type="checkbox" data-setting="textPriority"><i></i></label>
+      </div>
+      <div class="setting-row">
+        <span>语音朗读</span>
+        <span class="desc">朗读角色对白（需浏览器支持）</span>
+        <label class="toggle"><input type="checkbox" data-setting="voiceRead"><i></i></label>
+      </div>
+      <div class="settings-actions">
+        <button class="btn btn-primary" id="btn-settings-close">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 轻提示 ============ -->
+  <div id="toast" class="hidden"></div>
+</div>
+
+<script src="js/data.js?v=3.2"></script>
+<script src="js/audio.js?v=2.3"></script>
+<script src="js/art.js?v=4.1"></script>
+<script src="js/game.js?v=5.1"></script>
+</body>
+</html>

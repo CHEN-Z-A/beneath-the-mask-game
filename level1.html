@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>面具之下 - 第一关</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #1a1a2e;
+      color: #f0e6d2;
+      font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    #game-container {
+      width: 400px;
+      height: 520px;
+      position: relative;
+      background: #16213e;
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+
+    /* 粒子背景层 */
+    #particles {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* 阶段通用 */
+    .stage {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1;
+    }
+
+    .stage.active { display: flex; }
+
+    /* 对话框 */
+    .dialogue-box {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      background: rgba(22, 33, 62, 0.95);
+      border: 1px solid #b87333;
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 80px;
+      cursor: pointer;
+      z-index: 100;
+    }
+
+    .dialogue-speaker {
+      color: #d4af37;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .dialogue-text {
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    /* 面具容器 */
+    #mask-wrapper {
+      position: relative;
+      width: 320px;
+      height: 416px;
+      margin-top: 20px;
+    }
+
+    #mask-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+    }
+
+    /* 翻转相关 */
+    .mask-face {
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s;
+      backface-visibility: hidden;
+    }
+
+    #mask-back {
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: rgba(22, 33, 62, 0.95);
+      border: 2px solid #b87333;
+      border-radius: 12px;
+      padding: 24px;
+      transform: rotateY(180deg);
+      display: none;
+    }
+
+    #mask-back.show { display: flex; flex-direction: column; }
+
+    /* 按钮 */
+    .btn-primary {
+      background: linear-gradient(180deg, #d4af37, #b8861e);
+      color: #1a1a2e;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 24px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 16px;
+      font-family: inherit;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.1);
+    }
+
+    #flip-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #d4af37, #8b6914);
+      border: 2px solid #f0d878;
+      color: #1a1a2e;
+      font-size: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      display: none;
+    }
+
+    #flip-btn.show { display: block; }
+
+    /* ==================== SCAN 扫描阶段 ==================== */
+    #stage-scan { justify-content: flex-start; padding-top: 16px; }
+
+    #stage-scan #mask-wrapper {
+      width: 300px;
+      height: 356px;
+      margin-top: 4px;
+    }
+
+    #stage-scan .scan-fragment { width: 60px; height: 60px; }
+
+    .scan-tip {
+      color: #d4af37;
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-top: 8px;
+      text-align: center;
+    }
+
+    #scan-eye {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      z-index: 60;
+      transition: left 0.9s cubic-bezier(.4,0,.2,1), top 0.9s cubic-bezier(.4,0,.2,1);
+      pointer-events: none;
+      filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.8));
+    }
+
+    #scan-eye.hint-blink { animation: eyeBlink 0.5s ease 3; }
+
+    @keyframes eyeBlink {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(0.15); }
+    }
+
+    /* 碎片（扫描阶段） */
+    .scan-fragment {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: opacity 0.3s, transform 0.3s;
+      z-index: 30;
+    }
+
+    .scan-fragment:hover { opacity: 1; transform: scale(1.1); }
+    .scan-fragment.collected { opacity: 0; pointer-events: none; }
+    .scan-fragment.wrong { animation: shakeX 0.4s; }
+    .scan-fragment.highlight { filter: drop-shadow(0 0 10px #d4af37); }
+
+    @keyframes shakeX {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .frag-glow {
+      position: absolute;
+      inset: -6px;
+      border: 1px dashed rgba(212,175,55,0.7);
+      border-radius: 10px;
+      animation: pulseGlow 1.6s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 4px rgba(212,175,55,0.3); }
+      50% { box-shadow: 0 0 14px rgba(212,175,55,0.75); }
+    }
+
+    /* 扫描进度点 */
+    #scan-progress {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(184, 115, 51, 0.35);
+      border: 1px solid #b87333;
+      transition: all 0.3s;
+    }
+
+    .dot.on {
+      background: #d4af37;
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+    }
+
+    /* 漂浮标签 */
+    .floating-tag {
+      position: absolute;
+      left: 50%;
+      top: -22px;
+      transform: translateX(-50%);
+      background: rgba(212, 175, 55, 0.92);
+      color: #1a1a2e;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 2px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 70;
+      animation: floatUp 1.7s ease forwards;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translate(-50%, 8px); }
+      15% { opacity: 1; }
+      100% { opacity: 0; transform: translate(-50%, -26px); }
+    }
+
+    /* ==================== ASSEMBLE 拼接阶段 ==================== */
+    #stage-assemble { justify-content: flex-start; padding-top: 18px; }
+
+    .assemble-board {
+      position: relative;
+      width: 250px;
+      height: 280px;
+      margin-top: 4px;
+    }
+
+    #assemble-mask-svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.45));
+    }
+
+    .mask-slot {
+      position: absolute;
+      width: 72px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+      border: 2px dashed rgba(212, 175, 55, 0.55);
+      border-radius: 8px;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+    }
+
+    .mask-slot.next {
+      border-color: #d4af37;
+      border-style: solid;
+      box-shadow: 0 0 14px rgba(212, 175, 55, 0.6);
+      background: rgba(212, 175, 55, 0.08);
+      animation: slotPulse 1.4s ease-in-out infinite;
+    }
+
+    .mask-slot.drag-over {
+      border-color: #7fdb8a;
+      background: rgba(127, 219, 138, 0.15);
+      box-shadow: 0 0 14px rgba(127, 219, 138, 0.6);
+    }
+
+    .mask-slot.filled {
+      border-color: #d4af37;
+      border-style: solid;
+      background: transparent;
+      box-shadow: 0 0 10px rgba(212, 175, 55, 0.35);
+      animation: none;
+    }
+
+    .slot-svg { width: 100%; height: 100%; }
+    .slot-svg svg { width: 100%; height: 100%; }
+
+    @keyframes slotPulse {
+      0%, 100% { box-shadow: 0 0 8px rgba(212,175,55,0.35); }
+      50% { box-shadow: 0 0 18px rgba(212,175,55,0.8); }
+    }
+
+    /* 碎片侧边栏 */
+    #fragment-sidebar {
+      display: flex;
+      gap: 8px;
+      margin-top: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .drag-fragment {
+      width: 52px;
+      height: 52px;
+      background: rgba(184, 115, 51, 0.18);
+      border: 1px solid #b87333;
+      border-radius: 10px;
+      padding: 2px;
+      cursor: grab;
+      touch-action: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 30;
+    }
+
+    .drag-fragment:hover { transform: scale(1.08); box-shadow: 0 0 10px rgba(212,175,55,0.5); }
+    .drag-fragment.dragging {
+      position: fixed;
+      margin: 0;
+      z-index: 999;
+      cursor: grabbing;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      transform: scale(1.12);
+      opacity: 0.95;
+      pointer-events: none;
+    }
+    .drag-fragment.placed { opacity: 0.25; pointer-events: none; }
+
+    .drag-fragment svg { width: 100%; height: 100%; display: block; }
+
+    .assemble-hint {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #d4af37;
+      min-height: 18px;
+      text-align: center;
+    }
+
+    /* 侧边标签 */
+    #fragment-labels {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 4px;
+    }
+
+    .fragment-tag {
+      font-size: 11px;
+      color: #aaa;
+      border: 1px solid rgba(184,115,51,0.4);
+      border-radius: 10px;
+      padding: 2px 8px;
+      transition: all 0.3s;
+    }
+
+    .fragment-tag.next { color: #d4af37; border-color: #d4af37; box-shadow: 0 0 8px rgba(212,175,55,0.4); }
+    .fragment-tag.done { color: #7fdb8a; border-color: #7fdb8a; }
+
+    /* 复盘卡片 */
+    .report-card {
+      background: rgba(22, 33, 62, 0.95);
+      border: 1px solid #b87333;
+      border-radius: 12px;
+      padding: 24px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .report-title {
+      color: #d4af37;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .report-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .stars { color: #d4af37; }
+
+    .knowledge-card {
+      background: rgba(184, 115, 51, 0.15);
+      border: 1px solid #b87333;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    /* 仪式场景 */
+    .ritual-scene {
+      text-align: center;
+      margin: 8px 0;
+    }
+
+    .scene-title { color: #d4af37; font-size: 14px; }
+    .scene-desc { font-size: 12px; color: #aaa; margin-top: 4px; }
+
+    /* 选项按钮 */
+    .option-btn {
+      display: block;
+      width: 100%;
+      background: rgba(184, 115, 51, 0.2);
+      border: 1px solid #b87333;
+      color: #f0e6d2;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .option-btn:hover { background: rgba(184, 115, 51, 0.4); }
+
+    .option-btn.correct {
+      background: rgba(127, 219, 138, 0.3);
+      border-color: #7fdb8a;
+    }
+
+    .option-btn.wrong {
+      background: rgba(255, 107, 107, 0.25);
+      border-color: #ff6b6b;
+    }
+  </style>
+</head>
+<body>
+
+<div id="game-container">
+  <canvas id="particles"></canvas>
+
+  <!-- ==================== S0: INIT 开场对话 ==================== -->
+  <div id="stage-init" class="stage active">
+    <div id="mask-wrapper">
+      <!-- 完整面具预览（开场展示） -->
+      <svg id="mask-svg" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gold-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F9E08A"/>
+            <stop offset="45%" stop-color="#E6BE4C"/>
+            <stop offset="100%" stop-color="#B8861E"/>
+          </linearGradient>
+          <linearGradient id="green-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7FB08C"/>
+            <stop offset="50%" stop-color="#4E7A5E"/>
+            <stop offset="100%" stop-color="#2E4E3C"/>
+          </linearGradient>
+          <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#6BA3D9"/>
+            <stop offset="100%" stop-color="#2F6BA3"/>
+          </linearGradient>
+        </defs>
+
+        <g id="face-base">
+          <path d="M 105 175 L 295 175 L 285 210 L 310 320 L 280 410 L 275 400 L 200 405 L 125 400 L 120 410 L 90 320 L 115 210 Z" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+        </g>
+
+        <g id="crown">
+          <path d="M 110 85 L 290 85 L 292 95 L 108 95 Z" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 100 95 L 300 95 L 295 175 L 105 175 Z" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 125 115 Q 135 105 145 115 Q 155 125 145 135 Q 135 145 125 135 Q 115 125 125 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 175 115 Q 185 105 195 115 Q 205 125 195 135 Q 185 145 175 135 Q 165 125 175 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 225 115 Q 235 105 245 115 Q 255 125 245 135 Q 235 145 225 135 Q 215 125 225 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 185 140 Q 200 125 215 140 Q 220 155 200 165 Q 180 155 185 140" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 195 145 L 195 158 M 205 145 L 205 158" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 100 95 Q 70 85 60 60 Q 55 40 70 35 Q 85 32 85 50 Q 85 62 74 62 Q 66 62 66 52" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 62 48 Q 72 42 80 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 300 95 Q 330 85 340 60 Q 345 40 330 35 Q 315 32 315 50 Q 315 62 326 62 Q 334 62 334 52" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 338 48 Q 328 42 320 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <line x1="105" y1="175" x2="295" y2="175" stroke="#8B6914" stroke-width="2"/>
+        </g>
+
+        <g id="ears">
+          <path d="M 100 210 Q 50 200 35 260 Q 30 310 55 340 Q 75 355 95 330 Q 105 300 100 260" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 80 240 Q 60 235 55 260 Q 52 280 70 285 Q 85 288 88 270 Q 90 255 75 252" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 72 265 Q 68 275 78 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="55" y1="340" x2="55" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="55" cy="345" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="55" cy="355" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="55" cy="365" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="55" cy="375" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <path d="M 50 390 L 60 390 L 55 405 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 300 210 Q 350 200 365 260 Q 370 310 345 340 Q 325 355 305 330 Q 295 300 300 260" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 320 240 Q 340 235 345 260 Q 348 280 330 285 Q 315 288 312 270 Q 310 255 325 252" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 328 265 Q 332 275 322 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="345" y1="340" x2="345" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="345" cy="345" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="345" cy="355" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="345" cy="365" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <circle cx="345" cy="375" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+          <path d="M 340 390 L 350 390 L 345 405 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+        </g>
+
+        <g id="eyebrows">
+          <path d="M 125 230 Q 155 225 185 233 L 183 247 Q 155 240 127 244 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 275 230 Q 245 225 215 233 L 217 247 Q 245 240 273 244 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+        </g>
+
+        <g id="eyes">
+          <path d="M 135 265 Q 160 250 185 265 Q 190 285 160 295 Q 130 285 135 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+          <ellipse cx="160" cy="275" rx="14" ry="10" fill="url(#blue-grad)" stroke="#1C456E" stroke-width="1.5"/>
+          <ellipse cx="160" cy="275" rx="7" ry="5" fill="#122B44"/>
+          <path d="M 135 265 Q 160 255 185 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 265 265 Q 240 250 215 265 Q 210 285 240 295 Q 270 285 265 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+          <ellipse cx="240" cy="275" rx="14" ry="10" fill="url(#blue-grad)" stroke="#1C456E" stroke-width="1.5"/>
+          <ellipse cx="240" cy="275" rx="7" ry="5" fill="#122B44"/>
+          <path d="M 265 265 Q 240 255 215 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+        </g>
+
+        <g id="nose">
+          <line x1="200" y1="260" x2="200" y2="315" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 185 285 Q 190 300 188 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 215 285 Q 210 300 212 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 188 300 L 188 320 L 212 320 L 212 300" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+          <line x1="188" y1="320" x2="212" y2="320" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 193 325 Q 196 328 199 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+          <path d="M 201 325 Q 204 328 207 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+        </g>
+
+        <g id="mouth">
+          <line x1="165" y1="375" x2="235" y2="375" stroke="#5C4210" stroke-width="3" stroke-linecap="round"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="dialogue-box" onclick="nextDialogue()">
+      <div class="dialogue-speaker">蚕丛</div>
+      <div class="dialogue-text" id="dialogue-text">修复师，你来了。</div>
+    </div>
+  </div>
+
+  <!-- ==================== S1: SCAN 线索扫描 ==================== -->
+  <div id="stage-scan" class="stage">
+    <div class="scan-tip">点按金色眼球指向的碎片</div>
+    <div id="scan-progress"></div>
+    <div id="mask-wrapper">
+      <!-- 只显示底座（crown + ears + face-base），碎片散落四周 -->
+      <svg id="mask-svg-base" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;opacity:0.28;">
+        <defs>
+          <linearGradient id="gold-grad-b" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F9E08A"/>
+            <stop offset="45%" stop-color="#E6BE4C"/>
+            <stop offset="100%" stop-color="#B8861E"/>
+          </linearGradient>
+          <linearGradient id="green-grad-b" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7FB08C"/>
+            <stop offset="50%" stop-color="#4E7A5E"/>
+            <stop offset="100%" stop-color="#2E4E3C"/>
+          </linearGradient>
+        </defs>
+        <g id="face-base-b">
+          <path d="M 105 175 L 295 175 L 285 210 L 310 320 L 280 410 L 275 400 L 200 405 L 125 400 L 120 410 L 90 320 L 115 210 Z" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+        </g>
+        <g id="crown-b">
+          <path d="M 110 85 L 290 85 L 292 95 L 108 95 Z" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 100 95 L 300 95 L 295 175 L 105 175 Z" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 125 115 Q 135 105 145 115 Q 155 125 145 135 Q 135 145 125 135 Q 115 125 125 115" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 175 115 Q 185 105 195 115 Q 205 125 195 135 Q 185 145 175 135 Q 165 125 175 115" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 225 115 Q 235 105 245 115 Q 255 125 245 135 Q 235 145 225 135 Q 215 125 225 115" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 185 140 Q 200 125 215 140 Q 220 155 200 165 Q 180 155 185 140" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 195 145 L 195 158 M 205 145 L 205 158" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 100 95 Q 70 85 60 60 Q 55 40 70 35 Q 85 32 85 50 Q 85 62 74 62 Q 66 62 66 52" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 62 48 Q 72 42 80 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 300 95 Q 330 85 340 60 Q 345 40 330 35 Q 315 32 315 50 Q 315 62 326 62 Q 334 62 334 52" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 338 48 Q 328 42 320 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <line x1="105" y1="175" x2="295" y2="175" stroke="#8B6914" stroke-width="2"/>
+        </g>
+        <g id="ears-b">
+          <path d="M 100 210 Q 50 200 35 260 Q 30 310 55 340 Q 75 355 95 330 Q 105 300 100 260" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 80 240 Q 60 235 55 260 Q 52 280 70 285 Q 85 288 88 270 Q 90 255 75 252" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 72 265 Q 68 275 78 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="55" y1="340" x2="55" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="55" cy="345" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="55" cy="355" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="55" cy="365" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="55" cy="375" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <path d="M 50 390 L 60 390 L 55 405 Z" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 300 210 Q 350 200 365 260 Q 370 310 345 340 Q 325 355 305 330 Q 295 300 300 260" fill="url(#gold-grad-b)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 320 240 Q 340 235 345 260 Q 348 280 330 285 Q 315 288 312 270 Q 310 255 325 252" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 328 265 Q 332 275 322 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="345" y1="340" x2="345" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="345" cy="345" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="345" cy="355" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="345" cy="365" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <circle cx="345" cy="375" r="3" fill="url(#gold-grad-b)" stroke="#8B6914"/>
+          <path d="M 340 390 L 350 390 L 345 405 Z" fill="url(#green-grad-b)" stroke="#1E3A2C" stroke-width="1.5"/>
+        </g>
+      </svg>
+
+      <!-- 指向眼 -->
+      <div id="scan-eye" style="left:50%;top:10%;">
+        <svg viewBox="0 0 46 46" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="23" cy="23" r="20" fill="#16213e" stroke="#d4af37" stroke-width="2"/>
+          <circle cx="23" cy="23" r="14" fill="#f0e6d2"/>
+          <circle cx="23" cy="23" r="8" fill="#2a1c0c"/>
+          <circle cx="26" cy="20" r="3" fill="#d4af37"/>
+          <path d="M 14 32 Q 23 40 32 32" stroke="#d4af37" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+
+      <!-- 碎片容器 -->
+      <div id="scan-fragments"></div>
+    </div>
+
+
+    <div class="dialogue-box" onclick="onScanDialogueClick()">
+      <div class="dialogue-speaker">蚕丛</div>
+      <div class="dialogue-text" id="scan-dialogue-text">碎片散落了。看着我的眼睛指向，点击它。</div>
+    </div>
+  </div>
+
+  <!-- ==================== S2: ASSEMBLE 面具拼接 ==================== -->
+  <div id="stage-assemble" class="stage">
+    <div class="assemble-board">
+      <svg id="assemble-mask-svg" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gold-grad-a" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F9E08A"/>
+            <stop offset="45%" stop-color="#E6BE4C"/>
+            <stop offset="100%" stop-color="#B8861E"/>
+          </linearGradient>
+          <linearGradient id="green-grad-a" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#7FB08C"/>
+            <stop offset="50%" stop-color="#4E7A5E"/>
+            <stop offset="100%" stop-color="#2E4E3C"/>
+          </linearGradient>
+        </defs>
+        <g id="face-base-a">
+          <path d="M 105 175 L 295 175 L 285 210 L 310 320 L 280 410 L 275 400 L 200 405 L 125 400 L 120 410 L 90 320 L 115 210 Z" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+        </g>
+        <g id="crown-a">
+          <path d="M 110 85 L 290 85 L 292 95 L 108 95 Z" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 100 95 L 300 95 L 295 175 L 105 175 Z" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 125 115 Q 135 105 145 115 Q 155 125 145 135 Q 135 145 125 135 Q 115 125 125 115" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 175 115 Q 185 105 195 115 Q 205 125 195 135 Q 185 145 175 135 Q 165 125 175 115" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 225 115 Q 235 105 245 115 Q 255 125 245 135 Q 235 145 225 135 Q 215 125 225 115" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 185 140 Q 200 125 215 140 Q 220 155 200 165 Q 180 155 185 140" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 195 145 L 195 158 M 205 145 L 205 158" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 100 95 Q 70 85 60 60 Q 55 40 70 35 Q 85 32 85 50 Q 85 62 74 62 Q 66 62 66 52" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 62 48 Q 72 42 80 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 300 95 Q 330 85 340 60 Q 345 40 330 35 Q 315 32 315 50 Q 315 62 326 62 Q 334 62 334 52" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 338 48 Q 328 42 320 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+          <line x1="105" y1="175" x2="295" y2="175" stroke="#8B6914" stroke-width="2"/>
+        </g>
+        <g id="ears-a">
+          <path d="M 100 210 Q 50 200 35 260 Q 30 310 55 340 Q 75 355 95 330 Q 105 300 100 260" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 80 240 Q 60 235 55 260 Q 52 280 70 285 Q 85 288 88 270 Q 90 255 75 252" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 72 265 Q 68 275 78 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="55" y1="340" x2="55" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="55" cy="345" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="55" cy="355" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="55" cy="365" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="55" cy="375" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <path d="M 50 390 L 60 390 L 55 405 Z" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 300 210 Q 350 200 365 260 Q 370 310 345 340 Q 325 355 305 330 Q 295 300 300 260" fill="url(#gold-grad-a)" stroke="#8B6914" stroke-width="2"/>
+          <path d="M 320 240 Q 340 235 345 260 Q 348 280 330 285 Q 315 288 312 270 Q 310 255 325 252" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+          <path d="M 328 265 Q 332 275 322 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+          <line x1="345" y1="340" x2="345" y2="390" stroke="#8B6914" stroke-width="2"/>
+          <circle cx="345" cy="345" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="345" cy="355" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="345" cy="365" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <circle cx="345" cy="375" r="3" fill="url(#gold-grad-a)" stroke="#8B6914"/>
+          <path d="M 340 390 L 350 390 L 345 405 Z" fill="url(#green-grad-a)" stroke="#1E3A2C" stroke-width="1.5"/>
+        </g>
+      </svg>
+      <div id="slot-container"></div>
+    </div>
+
+    <div class="assemble-hint" id="assemble-hint">把碎片拖到面具的正确位置</div>
+    <div id="fragment-sidebar"></div>
+    <div id="fragment-labels"></div>
+
+    <div class="dialogue-box" onclick="onAssembleDialogueClick()">
+      <div class="dialogue-speaker">蚕丛</div>
+      <div class="dialogue-text" id="assemble-dialogue-text">眉对眉、眼对眼、鼻对鼻、口对口。拖拽归位。</div>
+    </div>
+  </div>
+
+  <!-- ==================== S3: FLIP 翻转推断 ==================== -->
+  <div id="stage-flip" class="stage">
+    <div id="mask-wrapper" style="perspective:1000px;">
+      <div id="mask-front-face" class="mask-face" style="width:100%;height:100%;">
+        <!-- 完整面具正面（JS 注入） -->
+      </div>
+      <div id="mask-back" class="mask-face">
+        <div style="color:#d4af37;font-size:18px;margin-bottom:16px;">国王的内心</div>
+        <div id="monologue-lines" style="font-size:14px;line-height:2;color:#f0e6d2;"></div>
+        <div id="inference-options" style="margin-top:20px;"></div>
+      </div>
+    </div>
+    <button id="flip-btn" onclick="doFlip()">鉴</button>
+  </div>
+
+  <!-- ==================== S4: RITUAL 仪式重现 ==================== -->
+  <div id="stage-ritual" class="stage">
+    <div class="report-card" style="width:100%;">
+      <div class="report-title">仪式重现</div>
+      <div class="ritual-scene">
+        <div class="scene-title">祭祀大典</div>
+        <div class="scene-desc">臣子面前，国王目光如炬</div>
+      </div>
+      <div class="ritual-scene">
+        <div class="scene-title">母亲面前</div>
+        <div class="scene-desc">卸下防备，眉头微皱</div>
+      </div>
+      <div class="ritual-scene">
+        <div class="scene-title">独处深夜</div>
+        <div class="scene-desc">无人之处，独自叹息</div>
+      </div>
+      <div style="margin-top:16px;font-size:14px;color:#aaa;">为什么同一面面具，在不同情境下含义不同？</div>
+      <button class="option-btn" onclick="ritualAnswer(true)">因为看面具的人不同</button>
+      <button class="option-btn" onclick="ritualAnswer(true)">因为国王的心情变了</button>
+      <button class="option-btn" onclick="ritualAnswer(false)">因为面具本身会变化</button>
+    </div>
+  </div>
+
+  <!-- ==================== S5: REVIEW 复盘结算 ==================== -->
+  <div id="stage-review" class="stage">
+    <div class="report-card">
+      <div class="report-title">修复报告 · 第一关</div>
+      <div style="font-size:12px;color:#aaa;margin-bottom:12px;">面具：威严面具</div>
+
+      <div class="report-item">
+        <span>共同注意（线索扫描）</span>
+        <span class="stars" id="stars-scan">☆☆☆☆☆</span>
+      </div>
+      <div class="report-item">
+        <span>情绪识别（正面拼接）</span>
+        <span class="stars" id="stars-assemble">☆☆☆☆☆</span>
+      </div>
+      <div class="report-item">
+        <span>心智理论（翻转推断）</span>
+        <span class="stars" id="stars-flip">☆☆☆☆☆</span>
+      </div>
+      <div class="report-item">
+        <span>情境理解（仪式重现）</span>
+        <span class="stars" id="stars-ritual">☆☆☆☆☆</span>
+      </div>
+
+      <div class="knowledge-card">
+        <div style="color:#d4af37;font-weight:bold;margin-bottom:8px;">黄金法则</div>
+        <div>表情是信号，不是真相。<br>古人用青铜把情绪铸成符号，<br>今天人们用表情传递信息——<br>但符号背后，总有故事。</div>
+      </div>
+
+      <button class="btn-primary" onclick="location.reload()">再玩一次</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+ * 面具之下 · 第一关 单文件实现
+ * SCAN 碎片收集 + ASSEMBLE 拖拽拼接 + 音效 + 粒子背景
+ * 不修改任何 SVG path 数据
+ * ============================================================ */
+
+/* ---------------- 音效系统（Web Audio 合成） ---------------- */
+const SFX = {
+  ctx: null,
+  master: null,
+  init() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain();
+      this.master.gain.value = 0.5;
+      this.master.connect(this.ctx.destination);
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  tone(freq, dur, opts = {}) {
+    const { type = 'sine', gain = 0.2, when = 0, slideTo = null, attack = 0.012, release = 0.1 } = opts;
+    if (!this.ctx) return;
+    const t0 = this.ctx.currentTime + when;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(Math.max(30, slideTo), t0 + dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(gain, t0 + attack);
+    g.gain.setValueAtTime(gain, t0 + dur - release);
+    g.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g);
+    g.connect(this.master);
+    osc.start(t0);
+    osc.stop(t0 + dur + 0.05);
+  },
+  chime() {   // 收集成功/拼接正确：青铜泛音列
+    const t = this.ctx.currentTime;
+    [523.25, 784, 1046.5, 1568].forEach((f, i) => {
+      this.tone(f, 0.9, { type: 'sine', gain: 0.11 - i * 0.018, when: i * 0.055 });
+    });
+    this.tone(261.6, 1.3, { type: 'sine', gain: 0.07 });
+  },
+  click() {   // 点击/按下
+    this.tone(660, 0.09, { type: 'triangle', gain: 0.22 });
+  },
+  deny() {    // 点错
+    this.tone(220, 0.32, { type: 'sine', gain: 0.13, slideTo: 175 });
+  },
+  bump() {    // 拖放落空
+    this.tone(150, 0.2, { type: 'triangle', gain: 0.26, slideTo: 90 });
+  },
+  flip() {    // 翻转
+    this.tone(300, 0.55, { type: 'sine', gain: 0.11, slideTo: 640 });
+    this.tone(160, 0.55, { type: 'triangle', gain: 0.09, slideTo: 320 });
+    this.tone(960, 0.2, { type: 'sine', gain: 0.05, when: 0.35 });
+  },
+  success() { // 全部完成
+    [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+      this.tone(f, 0.6, { type: 'sine', gain: 0.16, when: i * 0.12 });
+    });
+  }
+};
+
+function playSfx(name) {
+  SFX.init();
+  if (!SFX.ctx) return;
+  if (typeof SFX[name] === 'function') SFX[name]();
+}
+
+/* ---------------- 粒子背景（canvas） ---------------- */
+const ParticleBg = {
+  canvas: null,
+  ctx: null,
+  particles: [],
+  raf: 0,
+
+  init() {
+    this.canvas = document.getElementById('particles');
+    this.ctx = this.canvas.getContext('2d');
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    // 创建金色粉尘
+    this.particles = [];
+    const count = 46;
+    for (let i = 0; i < count; i++) {
+      this.particles.push({
+        x: Math.random() * this.canvas.width,
+        y: Math.random() * this.canvas.height,
+        r: Math.random() * 2 + 0.6,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: -Math.random() * 0.5 - 0.15,
+        a: Math.random() * 0.5 + 0.15,
+        tw: Math.random() * Math.PI * 2
+      });
+    }
+    this.loop();
+  },
+
+  resize() {
+    const c = this.canvas;
+    c.width = c.clientWidth;
+    c.height = c.clientHeight;
+  },
+
+  loop() {
+    this.raf = requestAnimationFrame(() => this.loop());
+    const ctx = this.ctx;
+    const c = this.canvas;
+    ctx.clearRect(0, 0, c.width, c.height);
+    for (const p of this.particles) {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.tw += 0.02;
+      if (p.y < -8) { p.y = c.height + 8; p.x = Math.random() * c.width; }
+      if (p.x < -8) p.x = c.width + 8;
+      if (p.x > c.width + 8) p.x = -8;
+      const alpha = p.a * (0.6 + 0.4 * Math.sin(p.tw));
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(212, 175, 55, ${alpha})`;
+      ctx.fill();
+    }
+  }
+};
+
+/* ---------------- 状态机 ---------------- */
+const stages = ['init', 'scan', 'assemble', 'flip', 'ritual', 'review'];
+let currentStageIndex = 0;
+
+function showStage(stageName) {
+  document.querySelectorAll('.stage').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('stage-' + stageName);
+  el.classList.add('active');
+  if (stageName === 'scan') startScan();
+  if (stageName === 'assemble') startAssemble();
+  if (stageName === 'flip') startFlip();
+}
+
+function nextStage(stageName) {
+  const idx = stages.indexOf(stageName);
+  if (idx !== -1) currentStageIndex = idx;
+  showStage(stageName);
+}
+
+/* ---------------- S0: INIT 对话 ---------------- */
+const dialogues = [
+  { speaker: "蚕丛", text: "修复师，你来了。" },
+  { speaker: "蚕丛", text: "这面'威严面具'，于祭祀大典上碎裂。" },
+  { speaker: "蚕丛", text: "它曾属于一位国王。表面铸满威严，背面却藏着无人知晓的心事。" },
+  { speaker: "蚕丛", text: "请随我修复此面具，读懂那双面之意。" }
+];
+let dialogueIndex = 0;
+
+function nextDialogue() {
+  playSfx('click');
+  dialogueIndex++;
+  if (dialogueIndex < dialogues.length) {
+    document.querySelector('#stage-init .dialogue-speaker').textContent = dialogues[dialogueIndex].speaker;
+    document.getElementById('dialogue-text').textContent = dialogues[dialogueIndex].text;
+  } else {
+    nextStage('scan');
+  }
+}
+
+/* ---------------- S1: SCAN 碎片收集 ---------------- */
+const FRAGMENT_PARTS = {
+  eyebrow: { name: '眉部碎片', emotion: '愤怒', part: 'eyebrow' },
+  eye:     { name: '眼部碎片', emotion: '凝视', part: 'eye' },
+  nose:    { name: '鼻部碎片', emotion: '威严', part: 'nose' },
+  mouth:   { name: '口部碎片', emotion: '紧绷', part: 'mouth' }
+};
+
+// 扫描目标顺序
+const SCAN_ORDER = ['eyebrow', 'eye', 'nose', 'mouth'];
+
+// 碎片散落位置（相对 #stage-scan 的 %）
+const SCAN_POS = {
+  eyebrow: { x: 8, y: 30 },
+  eye:     { x: 78, y: 26 },
+  nose:    { x: 10, y: 60 },
+  mouth:   { x: 76, y: 58 }
+};
+
+const scanState = { index: 0, done: false, lastInteract: Date.now(), eyeTimer: null };
+let collectCount = 0;
+
+/* 碎片 SVG 小图（复用面具 path 数据，按部位裁剪 viewBox 放大显示） */
+function pieceSvg(part, uid) {
+  const g = {
+    eyebrow: `<path d="M 125 230 Q 155 225 185 233 L 183 247 Q 155 240 127 244 Z" fill="url(#pg-${uid})" stroke="#1E3A2C" stroke-width="3"/>
+      <path d="M 275 230 Q 245 225 215 233 L 217 247 Q 245 240 273 244 Z" fill="url(#pg-${uid})" stroke="#1E3A2C" stroke-width="3"/>`,
+    eye: `<path d="M 135 265 Q 160 250 185 265 Q 190 285 160 295 Q 130 285 135 265" fill="#F4D97E" stroke="#8B6914" stroke-width="3"/>
+      <ellipse cx="160" cy="275" rx="14" ry="10" fill="url(#pb-${uid})" stroke="#1C456E" stroke-width="2"/>
+      <ellipse cx="160" cy="275" rx="7" ry="5" fill="#122B44"/>
+      <path d="M 265 265 Q 240 250 215 265 Q 210 285 240 295 Q 270 285 265 265" fill="#F4D97E" stroke="#8B6914" stroke-width="3"/>
+      <ellipse cx="240" cy="275" rx="14" ry="10" fill="url(#pb-${uid})" stroke="#1C456E" stroke-width="2"/>
+      <ellipse cx="240" cy="275" rx="7" ry="5" fill="#122B44"/>`,
+    nose: `<path d="M 185 285 Q 190 300 188 300" fill="none" stroke="#8B6914" stroke-width="3"/>
+      <path d="M 215 285 Q 210 300 212 300" fill="none" stroke="#8B6914" stroke-width="3"/>
+      <path d="M 188 300 L 188 320 L 212 320 L 212 300" fill="url(#pg-${uid})" stroke="#8B6914" stroke-width="3"/>
+      <line x1="188" y1="320" x2="212" y2="320" stroke="#8B6914" stroke-width="3"/>
+      <path d="M 193 325 Q 196 328 199 325" fill="none" stroke="#5C4210" stroke-width="2"/>
+      <path d="M 201 325 Q 204 328 207 325" fill="none" stroke="#5C4210" stroke-width="2"/>`,
+    mouth: `<line x1="165" y1="375" x2="235" y2="375" stroke="#5C4210" stroke-width="5" stroke-linecap="round"/>`
+  };
+  const vb = {
+    eyebrow: '105 215 190 42',
+    eye:     '120 245 160 58',
+    nose:    '180 255 42 84',
+    mouth:   '150 365 100 20'
+  };
+  return `<svg viewBox="${vb[part]}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="pg-${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#F9E08A"/><stop offset="45%" stop-color="#E6BE4C"/><stop offset="100%" stop-color="#B8861E"/>
+      </linearGradient>
+      <linearGradient id="pb-${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#6BA3D9"/><stop offset="100%" stop-color="#2F6BA3"/>
+      </linearGradient>
+    </defs>
+    ${g[part]}
+  </svg>`;
+}
+
+function startScan() {
+  scanState.index = 0;
+  scanState.done = false;
+  scanState.lastInteract = Date.now();
+
+  // 进度点
+  const prog = document.getElementById('scan-progress');
+  prog.innerHTML = SCAN_ORDER.map((_, i) => `<span class="dot" id="sdot-${i}"></span>`).join('');
+
+  // 渲染碎片
+  const wrap = document.getElementById('scan-fragments');
+  wrap.innerHTML = '';
+  SCAN_ORDER.forEach(key => {
+    const div = document.createElement('div');
+    div.className = 'scan-fragment';
+    div.id = 'scan-frag-' + key;
+    div.dataset.id = key;
+    div.style.left = SCAN_POS[key].x + '%';
+    div.style.top = SCAN_POS[key].y + '%';
+    div.innerHTML = pieceSvg(FRAGMENT_PARTS[key].part, key);
+    div.addEventListener('click', () => onScanClick(key));
+    wrap.appendChild(div);
+  });
+
+  // 重置对话
+  document.getElementById('scan-dialogue-text').textContent = '碎片散落了。看着我的眼睛指向，点击它。';
+
+  // 眼球先停在上方，再指向第一个目标
+  const eye = document.getElementById('scan-eye');
+  eye.style.left = '50%';
+  eye.style.top = '12%';
+  setTimeout(() => moveEyeTo(SCAN_ORDER[0]), 500);
+
+  // 每 3 秒重新指向当前目标（共同注意提示）
+  if (scanState.eyeTimer) clearInterval(scanState.eyeTimer);
+  scanState.eyeTimer = setInterval(() => {
+    if (scanState.done) return;
+    moveEyeTo(SCAN_ORDER[scanState.index]);
+  }, 3000);
+}
+
+function moveEyeTo(key) {
+  const eye = document.getElementById('scan-eye');
+  if (!eye) return;
+  const pos = SCAN_POS[key];
+  // 眼睛指向碎片略上方
+  eye.style.left = Math.max(2, pos.x + 4) + '%';
+  eye.style.top = Math.max(18, pos.y - 4) + '%';
+}
+
+function onScanClick(key) {
+  if (scanState.done) return;
+  scanState.lastInteract = Date.now();
+  const target = SCAN_ORDER[scanState.index];
+  if (key === target) {
+    scanCorrect(target);
+  } else {
+    scanWrong(key);
+  }
+}
+
+function scanCorrect(key) {
+  playSfx('chime');
+  collectCount++;
+  scanState.index++;
+  const el = document.getElementById('scan-frag-' + key);
+  el.classList.add('collected', 'highlight');
+  floatTag(el, `${FRAGMENT_PARTS[key].name} · ${FRAGMENT_PARTS[key].emotion}`);
+  const dot = document.getElementById('sdot-' + (scanState.index - 1));
+  if (dot) dot.classList.add('on');
+  document.getElementById('scan-dialogue-text').textContent =
+    `你看到了「${FRAGMENT_PARTS[key].emotion}」的特征。${scanState.index < 4 ? '还有 ' + (4 - scanState.index) + ' 块。' : ''}`;
+
+  if (scanState.index >= SCAN_ORDER.length) {
+    scanState.done = true;
+    if (scanState.eyeTimer) clearInterval(scanState.eyeTimer);
+    setTimeout(() => {
+      playSfx('success');
+      document.getElementById('scan-dialogue-text').textContent = '碎片已齐。接下来，请将其归位。';
+    }, 600);
+  } else {
+    setTimeout(() => moveEyeTo(SCAN_ORDER[scanState.index]), 1000);
+  }
+}
+
+function scanWrong(key) {
+  playSfx('deny');
+  const el = document.getElementById('scan-frag-' + key);
+  if (el) {
+    el.classList.add('wrong');
+    setTimeout(() => el.classList.remove('wrong'), 450);
+  }
+  document.getElementById('scan-dialogue-text').textContent = '这块碎片也有价值，但不是现在要找的。请看着我的眼睛指向。';
+}
+
+function onScanDialogueClick() {
+  if (!scanState.done) {
+    // 未完成时点击对话：提示 + 眼球闪烁
+    playSfx('click');
+    document.getElementById('scan-dialogue-text').textContent = '顺着金色眼睛的指向，点击它所指的碎片。';
+    const eye = document.getElementById('scan-eye');
+    eye.classList.add('hint-blink');
+    setTimeout(() => eye.classList.remove('hint-blink'), 1600);
+    return;
+  }
+  playSfx('click');
+  nextStage('assemble');
+}
+
+/* ---------------- S2: ASSEMBLE 拖拽拼接 ---------------- */
+/* 槽位坐标按 viewBox 400x520 在 260x300 板上的等比映射计算 */
+const SLOT_POS = {
+  slot_eyebrow: { x: 50, y: 45 },
+  slot_eye:     { x: 50, y: 52 },
+  slot_nose:    { x: 50, y: 59 },
+  slot_mouth:   { x: 50, y: 72 }
+};
+
+// 槽位 → 对应碎片
+const SLOT_FRAGMENT = {
+  slot_eyebrow: 'eyebrow',
+  slot_eye: 'eye',
+  slot_nose: 'nose',
+  slot_mouth: 'mouth'
+};
+
+const assembleState = { placed: 0, errorStreak: 0, step: 0, done: false, drag: null };
+
+function startAssemble() {
+  assembleState.placed = 0;
+  assembleState.step = 0;
+  assembleState.done = false;
+  assembleState.errorStreak = 0;
+
+  // 槽位
+  const sc = document.getElementById('slot-container');
+  sc.innerHTML = '';
+  Object.keys(SLOT_POS).forEach(slotId => {
+    const p = SLOT_POS[slotId];
+    const div = document.createElement('div');
+    div.className = 'mask-slot';
+    div.id = slotId;
+    div.dataset.slot = slotId;
+    div.style.left = p.x + '%';
+    div.style.top = p.y + '%';
+    sc.appendChild(div);
+  });
+
+  // 碎片侧边栏（打乱顺序）
+  const sidebar = document.getElementById('fragment-sidebar');
+  sidebar.innerHTML = '';
+  const keys = ['eyebrow', 'eye', 'nose', 'mouth'].sort(() => Math.random() - 0.5);
+  keys.forEach(key => {
+    const div = document.createElement('div');
+    div.className = 'drag-fragment';
+    div.id = 'dfrag-' + key;
+    div.dataset.id = key;
+    div.innerHTML = pieceSvg(FRAGMENT_PARTS[key].part, 'a' + key);
+    div.style.touchAction = 'none';
+    div.addEventListener('pointerdown', (e) => onDragStart(e, div, key));
+    sidebar.appendChild(div);
+  });
+
+  // 标签
+  const labels = document.getElementById('fragment-labels');
+  labels.innerHTML = '';
+  Object.keys(SLOT_FRAGMENT).forEach(slotId => {
+    const key = SLOT_FRAGMENT[slotId];
+    const tag = document.createElement('div');
+    tag.className = 'fragment-tag';
+    tag.id = 'tag-' + slotId;
+    tag.textContent = `${FRAGMENT_PARTS[key].emotion}之${FRAGMENT_PARTS[key].name.replace('部碎片', '').replace('碎片', '')}`;
+    labels.appendChild(tag);
+  });
+
+  document.getElementById('assemble-dialogue-text').textContent = '眉对眉、眼对眼、鼻对鼻、口对口。拖拽归位。';
+  assembleHintStep();
+}
+
+function assembleHintStep() {
+  document.querySelectorAll('.mask-slot').forEach(s => s.classList.remove('next'));
+  document.querySelectorAll('.fragment-tag').forEach(t => t.classList.remove('next'));
+  const orderKeys = Object.keys(SLOT_POS);
+  const curSlot = orderKeys[assembleState.step];
+  if (!curSlot) return;
+  const slotEl = document.getElementById(curSlot);
+  if (slotEl) slotEl.classList.add('next');
+  const tagEl = document.getElementById('tag-' + curSlot);
+  if (tagEl) tagEl.classList.add('next');
+  const key = SLOT_FRAGMENT[curSlot];
+  document.getElementById('assemble-hint').textContent =
+    `第 ${assembleState.step + 1} / 4 步：把「${FRAGMENT_PARTS[key].emotion}」拖到对应位置`;
+}
+
+function onDragStart(e, el, key) {
+  if (assembleState.done || el.classList.contains('placed')) return;
+  e.preventDefault();
+  playSfx('click');
+  const rect = el.getBoundingClientRect();
+  assembleState.drag = {
+    el, key,
+    offsetX: e.clientX - rect.left,
+    offsetY: e.clientY - rect.top,
+    startLeft: rect.left,
+    startTop: rect.top,
+    parent: el.parentElement
+  };
+  el.classList.add('dragging');
+  el.style.left = rect.left + 'px';
+  el.style.top = rect.top + 'px';
+  el.style.width = rect.width + 'px';
+  el.style.height = rect.height + 'px';
+  document.body.appendChild(el);
+
+  window.addEventListener('pointermove', onDragMove);
+  window.addEventListener('pointerup', onDragEnd);
+}
+
+function onDragMove(e) {
+  const d = assembleState.drag;
+  if (!d) return;
+  d.el.style.left = (e.clientX - d.offsetX) + 'px';
+  d.el.style.top = (e.clientY - d.offsetY) + 'px';
+  // 槽位悬停高亮
+  document.querySelectorAll('.mask-slot').forEach(s => {
+    const filled = s.classList.contains('filled');
+    s.classList.toggle('drag-over', !filled && hitTest(s, e.clientX, e.clientY));
+  });
+}
+
+function onDragEnd(e) {
+  window.removeEventListener('pointermove', onDragMove);
+  window.removeEventListener('pointerup', onDragEnd);
+  const d = assembleState.drag;
+  if (!d) return;
+  assembleState.drag = null;
+  document.querySelectorAll('.mask-slot').forEach(s => s.classList.remove('drag-over'));
+
+  const slots = Array.from(document.querySelectorAll('.mask-slot'));
+  const hit = slots.find(s => !s.classList.contains('filled') && hitTest(s, e.clientX, e.clientY));
+
+  if (hit) {
+    const slotId = hit.dataset.slot;
+    const expect = SLOT_FRAGMENT[slotId];
+    if (expect === d.key) {
+      assembleCorrect(hit, slotId, d.el);
+    } else {
+      assembleWrong(hit, slotId, d.el, d);
+    }
+  } else {
+    // 弹回
+    playSfx('bump');
+    d.el.classList.remove('dragging');
+    d.parent.appendChild(d.el);
+    d.el.style.left = d.el.style.top = d.el.style.width = d.el.style.height = '';
+  }
+}
+
+function hitTest(el, x, y) {
+  const r = el.getBoundingClientRect();
+  return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+}
+
+function assembleCorrect(slotEl, slotId, dragEl) {
+  playSfx('chime');
+  dragEl.remove();
+  slotEl.classList.add('filled');
+  const key = SLOT_FRAGMENT[slotId];
+  slotEl.innerHTML = `<div class="slot-svg">${pieceSvg(FRAGMENT_PARTS[key].part, 'f' + key)}</div>`;
+  const tag = document.getElementById('tag-' + slotId);
+  if (tag) tag.classList.add('done');
+  assembleState.placed++;
+  assembleState.errorStreak = 0;
+  assembleState.step++;
+  assembleHintStep();
+  document.getElementById('assemble-dialogue-text').textContent =
+    `「${FRAGMENT_PARTS[key].emotion}」已归位。${assembleState.placed < 4 ? '继续。' : ''}`;
+
+  if (assembleState.placed >= 4) {
+    assembleState.done = true;
+    setTimeout(() => {
+      playSfx('success');
+      document.getElementById('assemble-hint').textContent = '面具正面已复原！';
+      document.getElementById('assemble-dialogue-text').textContent = '面具正面已经复原。现在，看看它的背面——点击对话框继续。';
+    }, 800);
+  }
+}
+
+function assembleWrong(slotEl, slotId, dragEl, d) {
+  assembleState.errorStreak++;
+  playSfx('bump');
+  dragEl.classList.remove('dragging');
+  d.parent.appendChild(dragEl);
+  dragEl.style.left = dragEl.style.top = dragEl.style.width = dragEl.style.height = '';
+  document.getElementById('assemble-dialogue-text').textContent =
+    '这里不对。「' + FRAGMENT_PARTS[d.key].emotion + '」应该放到标注的「' + FRAGMENT_PARTS[SLOT_FRAGMENT[slotId]].emotion + '」位置。';
+  // 错 3 次给更强提示
+  if (assembleState.errorStreak >= 3) {
+    assembleHintStep();
+    document.getElementById('assemble-hint').textContent += '（看高亮的槽位）';
+  }
+}
+
+function onAssembleDialogueClick() {
+  playSfx('click');
+  if (!assembleState.done) {
+    assembleHintStep();
+    document.getElementById('assemble-dialogue-text').textContent =
+      '跟着金色标签的顺序：先放「' + FRAGMENT_PARTS[SLOT_FRAGMENT[Object.keys(SLOT_POS)[assembleState.step]]].emotion + '」。';
+    return;
+  }
+  nextStage('flip');
+}
+
+/* ---------------- S3: FLIP 翻转推断 ---------------- */
+let isFlipped = false;
+const monologueLines = [
+  "我其实很累。",
+  "昨夜批阅竹简至三更，头痛欲裂。",
+  "但祭祀要求我不能示弱。",
+  "臣子们在看，我必须撑住。",
+  "我不想让他们担心。"
+];
+
+let inferCorrect = false;
+
+function startFlip() {
+  isFlipped = false;
+  inferCorrect = false;
+  // 正面完整面具
+  document.getElementById('mask-front-face').innerHTML = `
+    <svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));">
+      <defs>
+        <linearGradient id="gold-grad-f" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#F9E08A"/><stop offset="45%" stop-color="#E6BE4C"/><stop offset="100%" stop-color="#B8861E"/>
+        </linearGradient>
+        <linearGradient id="green-grad-f" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#7FB08C"/><stop offset="50%" stop-color="#4E7A5E"/><stop offset="100%" stop-color="#2E4E3C"/>
+        </linearGradient>
+        <linearGradient id="blue-grad-f" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#6BA3D9"/><stop offset="100%" stop-color="#2F6BA3"/>
+        </linearGradient>
+      </defs>
+      <g id="face-base-f">
+        <path d="M 105 175 L 295 175 L 285 210 L 310 320 L 280 410 L 275 400 L 200 405 L 125 400 L 120 410 L 90 320 L 115 210 Z" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+      </g>
+      <g id="crown-f">
+        <path d="M 110 85 L 290 85 L 292 95 L 108 95 Z" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 100 95 L 300 95 L 295 175 L 105 175 Z" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 125 115 Q 135 105 145 115 Q 155 125 145 135 Q 135 145 125 135 Q 115 125 125 115" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 175 115 Q 185 105 195 115 Q 205 125 195 135 Q 185 145 175 135 Q 165 125 175 115" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 225 115 Q 235 105 245 115 Q 255 125 245 135 Q 235 145 225 135 Q 215 125 225 115" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 185 140 Q 200 125 215 140 Q 220 155 200 165 Q 180 155 185 140" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 195 145 L 195 158 M 205 145 L 205 158" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 100 95 Q 70 85 60 60 Q 55 40 70 35 Q 85 32 85 50 Q 85 62 74 62 Q 66 62 66 52" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 62 48 Q 72 42 80 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 300 95 Q 330 85 340 60 Q 345 40 330 35 Q 315 32 315 50 Q 315 62 326 62 Q 334 62 334 52" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 338 48 Q 328 42 320 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+        <line x1="105" y1="175" x2="295" y2="175" stroke="#8B6914" stroke-width="2"/>
+      </g>
+      <g id="ears-f">
+        <path d="M 100 210 Q 50 200 35 260 Q 30 310 55 340 Q 75 355 95 330 Q 105 300 100 260" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 80 240 Q 60 235 55 260 Q 52 280 70 285 Q 85 288 88 270 Q 90 255 75 252" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 72 265 Q 68 275 78 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+        <line x1="55" y1="340" x2="55" y2="390" stroke="#8B6914" stroke-width="2"/>
+        <circle cx="55" cy="345" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="55" cy="355" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="55" cy="365" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="55" cy="375" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <path d="M 50 390 L 60 390 L 55 405 Z" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 300 210 Q 350 200 365 260 Q 370 310 345 340 Q 325 355 305 330 Q 295 300 300 260" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 320 240 Q 340 235 345 260 Q 348 280 330 285 Q 315 288 312 270 Q 310 255 325 252" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 328 265 Q 332 275 322 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+        <line x1="345" y1="340" x2="345" y2="390" stroke="#8B6914" stroke-width="2"/>
+        <circle cx="345" cy="345" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="345" cy="355" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="345" cy="365" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <circle cx="345" cy="375" r="3" fill="url(#gold-grad-f)" stroke="#8B6914"/>
+        <path d="M 340 390 L 350 390 L 345 405 Z" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+      </g>
+      <g id="eyebrows-f">
+        <path d="M 125 230 Q 155 225 185 233 L 183 247 Q 155 240 127 244 Z" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+        <path d="M 275 230 Q 245 225 215 233 L 217 247 Q 245 240 273 244 Z" fill="url(#green-grad-f)" stroke="#1E3A2C" stroke-width="1.5"/>
+      </g>
+      <g id="eyes-f">
+        <path d="M 135 265 Q 160 250 185 265 Q 190 285 160 295 Q 130 285 135 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+        <ellipse cx="160" cy="275" rx="14" ry="10" fill="url(#blue-grad-f)" stroke="#1C456E" stroke-width="1.5"/>
+        <ellipse cx="160" cy="275" rx="7" ry="5" fill="#122B44"/>
+        <path d="M 135 265 Q 160 255 185 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 265 265 Q 240 250 215 265 Q 210 285 240 295 Q 270 285 265 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+        <ellipse cx="240" cy="275" rx="14" ry="10" fill="url(#blue-grad-f)" stroke="#1C456E" stroke-width="1.5"/>
+        <ellipse cx="240" cy="275" rx="7" ry="5" fill="#122B44"/>
+        <path d="M 265 265 Q 240 255 215 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+      </g>
+      <g id="nose-f">
+        <line x1="200" y1="260" x2="200" y2="315" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 185 285 Q 190 300 188 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 215 285 Q 210 300 212 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 188 300 L 188 320 L 212 320 L 212 300" fill="url(#gold-grad-f)" stroke="#8B6914" stroke-width="2"/>
+        <line x1="188" y1="320" x2="212" y2="320" stroke="#8B6914" stroke-width="2"/>
+        <path d="M 193 325 Q 196 328 199 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+        <path d="M 201 325 Q 204 328 207 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+      </g>
+      <g id="mouth-f">
+        <line x1="165" y1="375" x2="235" y2="375" stroke="#5C4210" stroke-width="3" stroke-linecap="round"/>
+      </g>
+    </svg>`;
+
+  // 背面重置
+  const back = document.getElementById('mask-back');
+  back.classList.remove('show');
+  back.style.display = 'none';
+  back.style.transform = 'rotateY(180deg)';
+  document.getElementById('monologue-lines').innerHTML = '';
+  document.getElementById('inference-options').innerHTML = '';
+  const front = document.getElementById('mask-front-face');
+  front.style.display = 'block';
+  front.style.transform = 'rotateY(0deg)';
+  front.style.opacity = 1;
+  document.getElementById('flip-btn').classList.add('show');
+}
+
+function doFlip() {
+  if (isFlipped) return;
+  isFlipped = true;
+  playSfx('flip');
+
+  const front = document.getElementById('mask-front-face');
+  const back = document.getElementById('mask-back');
+  const btn = document.getElementById('flip-btn');
+
+  // 翻转动画
+  front.style.transition = 'transform 0.8s';
+  front.style.transform = 'rotateY(180deg)';
+  btn.classList.remove('show');
+
+  setTimeout(() => {
+    front.style.display = 'none';
+    back.classList.add('show');
+    back.style.transform = 'rotateY(0deg)';
+
+    // 逐句显示独白
+    const container = document.getElementById('monologue-lines');
+    container.innerHTML = '';
+    monologueLines.forEach((line, i) => {
+      setTimeout(() => {
+        const p = document.createElement('p');
+        p.textContent = line;
+        p.style.opacity = '0';
+        p.style.transition = 'opacity 0.5s';
+        container.appendChild(p);
+        requestAnimationFrame(() => p.style.opacity = '1');
+      }, i * 1200);
+    });
+
+    // 显示选项
+    setTimeout(() => {
+      const optContainer = document.getElementById('inference-options');
+      optContainer.innerHTML = `
+        <div style="margin-top:16px;color:#aaa;font-size:13px;">国王为什么要戴"威严面具"？</div>
+        <button class="option-btn" onclick="afterInference(true, this)">他想让臣子们安心</button>
+        <button class="option-btn" onclick="afterInference(false, this)">他真的很有威严</button>
+        <button class="option-btn" onclick="afterInference(false, this)">他喜欢戴面具</button>
+      `;
+    }, monologueLines.length * 1200 + 500);
+  }, 400);
+}
+
+function afterInference(correct, btnEl) {
+  const buttons = document.querySelectorAll('#inference-options .option-btn');
+  if (correct) {
+    buttons.forEach(b => b.disabled = true);
+    inferCorrect = true;
+    playSfx('chime');
+    const opts = Array.from(buttons);
+    opts[0].classList.add('correct');
+    opts[1].classList.add('wrong');
+    opts[2].classList.add('wrong');
+    setTimeout(() => nextStage('ritual'), 1500);
+  } else {
+    playSfx('deny');
+    if (btnEl) btnEl.classList.add('wrong');
+    setTimeout(() => {
+      if (btnEl) btnEl.classList.remove('wrong');
+    }, 600);
+  }
+}
+
+/* ---------------- S4: RITUAL 仪式重现 ---------------- */
+let ritualCorrect = false;
+let ritualAnswered = false;
+
+function ritualAnswer(isGood) {
+  if (ritualAnswered) return;
+  ritualAnswered = true;
+  if (isGood) {
+    ritualCorrect = true;
+    playSfx('success');
+  } else {
+    playSfx('deny');
+  }
+  setTimeout(() => nextStage('review'), 1200);
+}
+
+/* ---------------- S5: REVIEW 复盘 ---------------- */
+function fillStars(elId, n) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  let s = '';
+  for (let i = 0; i < 5; i++) s += i < n ? '⭐' : '☆';
+  el.textContent = s;
+}
+
+function showReview() {
+  // 简化：扫描以完成时间/正确率计星
+  const scanStars = 4;
+  const assembleStars = 4 + (assembleState.errorStreak >= 3 ? -1 : 0);
+  fillStars('stars-scan', scanStars);
+  fillStars('stars-assemble', assembleStars);
+  fillStars('stars-flip', inferCorrect ? 5 : 3);
+  fillStars('stars-ritual', ritualCorrect ? 4 : 2);
+  playSfx('chime');
+}
+
+/* ---------------- 工具：漂浮标签 ---------------- */
+function floatTag(el, text) {
+  const tag = document.createElement('div');
+  tag.className = 'floating-tag';
+  tag.textContent = text;
+  el.appendChild(tag);
+  setTimeout(() => tag.remove(), 1750);
+}
+
+/* ---------------- 初始化 ---------------- */
+function init() {
+  ParticleBg.init();
+  showStage('init');
+}
+
+// 拦截 nextStage 进入 review 时刷新星级
+const _nextStage = nextStage;
+nextStage = function (stageName) {
+  if (stageName === 'review') showReview();
+  _nextStage(stageName);
+};
+
+init();
+</script>
+
+</body>
+</html>

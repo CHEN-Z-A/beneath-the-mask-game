@@ -1,0 +1,117 @@
+<svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 金箔主色渐变 -->
+    <linearGradient id="gold-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F9E08A"/>
+      <stop offset="45%" stop-color="#E6BE4C"/>
+      <stop offset="100%" stop-color="#B8861E"/>
+    </linearGradient>
+    <!-- 青绿点缀渐变 -->
+    <linearGradient id="green-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7FB08C"/>
+      <stop offset="50%" stop-color="#4E7A5E"/>
+      <stop offset="100%" stop-color="#2E4E3C"/>
+    </linearGradient>
+    <!-- 眼珠宝蓝渐变 -->
+    <linearGradient id="blue-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6BA3D9"/>
+      <stop offset="100%" stop-color="#2F6BA3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 背景深青绿（可删除，游戏内可省） -->
+  <rect x="0" y="0" width="400" height="520" fill="#16352A"/>
+
+  <!-- 脸部金色基础层（不属于 6 组拆分，作为固定底） -->
+  <g id="face-base">
+    <path d="M 105 175 L 295 175 L 285 210 L 310 320 L 280 410 L 275 400 L 200 405 L 125 400 L 120 410 L 90 320 L 115 210 Z"
+          fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+  </g>
+
+  <!-- ==================== 1. crown 头饰 ==================== -->
+  <g id="crown">
+    <!-- 顶部平直冠檐 -->
+    <path d="M 110 85 L 290 85 L 292 95 L 108 95 Z" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <!-- 冠身主体 -->
+    <path d="M 100 95 L 300 95 L 295 175 L 105 175 Z" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <!-- 回纹装饰带（青绿点缀，左/中/右） -->
+    <path d="M 125 115 Q 135 105 145 115 Q 155 125 145 135 Q 135 145 125 135 Q 115 125 125 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 175 115 Q 185 105 195 115 Q 205 125 195 135 Q 185 145 175 135 Q 165 125 175 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 225 115 Q 235 105 245 115 Q 255 125 245 135 Q 235 145 225 135 Q 215 125 225 115" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <!-- 冠身中央浮雕纹样（青绿） -->
+    <path d="M 185 140 Q 200 125 215 140 Q 220 155 200 165 Q 180 155 185 140" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 195 145 L 195 158 M 205 145 L 205 158" stroke="#1E3A2C" stroke-width="1.5"/>
+    <!-- 左侧羊角形翻卷装饰 -->
+    <path d="M 100 95 Q 70 85 60 60 Q 55 40 70 35 Q 85 32 85 50 Q 85 62 74 62 Q 66 62 66 52" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 62 48 Q 72 42 80 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+    <!-- 右侧羊角形翻卷装饰 -->
+    <path d="M 300 95 Q 330 85 340 60 Q 345 40 330 35 Q 315 32 315 50 Q 315 62 326 62 Q 334 62 334 52" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 338 48 Q 328 42 320 50" fill="none" stroke="#8B6914" stroke-width="2"/>
+    <!-- 冠下沿与额头交界线 -->
+    <line x1="105" y1="175" x2="295" y2="175" stroke="#8B6914" stroke-width="2"/>
+  </g>
+
+  <!-- ==================== 2. eyebrows 眉毛（青绿） ==================== -->
+  <g id="eyebrows">
+    <path d="M 125 230 Q 155 225 185 233 L 183 247 Q 155 240 127 244 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 275 230 Q 245 225 215 233 L 217 247 Q 245 240 273 244 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== 3. eyes 眼睛（杏仁形+蓝色眼珠） ==================== -->
+  <g id="eyes">
+    <!-- 左眼眶 -->
+    <path d="M 135 265 Q 160 250 185 265 Q 190 285 160 295 Q 130 285 135 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+    <ellipse cx="160" cy="275" rx="14" ry="10" fill="url(#blue-grad)" stroke="#1C456E" stroke-width="1.5"/>
+    <ellipse cx="160" cy="275" rx="7" ry="5" fill="#122B44"/>
+    <path d="M 135 265 Q 160 255 185 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+    <!-- 右眼眶 -->
+    <path d="M 265 265 Q 240 250 215 265 Q 210 285 240 295 Q 270 285 265 265" fill="#F4D97E" stroke="#8B6914" stroke-width="2"/>
+    <ellipse cx="240" cy="275" rx="14" ry="10" fill="url(#blue-grad)" stroke="#1C456E" stroke-width="1.5"/>
+    <ellipse cx="240" cy="275" rx="7" ry="5" fill="#122B44"/>
+    <path d="M 265 265 Q 240 255 215 265" fill="none" stroke="#8B6914" stroke-width="2"/>
+  </g>
+
+  <!-- ==================== 4. nose 鼻子（缩短版） ==================== -->
+  <g id="nose">
+    <line x1="200" y1="260" x2="200" y2="315" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 185 285 Q 190 300 188 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 215 285 Q 210 300 212 300" fill="none" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 188 300 L 188 320 L 212 320 L 212 300" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <line x1="188" y1="320" x2="212" y2="320" stroke="#8B6914" stroke-width="2"/>
+    <path d="M 193 325 Q 196 328 199 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+    <path d="M 201 325 Q 204 328 207 325" fill="none" stroke="#5C4210" stroke-width="1.5"/>
+  </g>
+
+  <!-- ==================== 5. mouth 嘴巴（单一水平线） ==================== -->
+  <g id="mouth">
+    <line x1="165" y1="375" x2="235" y2="375" stroke="#5C4210" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- ==================== 6. ears 耳朵（金色+青绿卷云纹+对称耳坠） ==================== -->
+  <g id="ears">
+    <!-- 左耳外轮廓 -->
+    <path d="M 100 210 Q 50 200 35 260 Q 30 310 55 340 Q 75 355 95 330 Q 105 300 100 260" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <!-- 左耳卷云纹（青绿） -->
+    <path d="M 80 240 Q 60 235 55 260 Q 52 280 70 285 Q 85 288 88 270 Q 90 255 75 252" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 72 265 Q 68 275 78 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+    <!-- 左耳珠串耳坠 -->
+    <line x1="55" y1="340" x2="55" y2="390" stroke="#8B6914" stroke-width="2"/>
+    <circle cx="55" cy="345" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="55" cy="355" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="55" cy="365" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="55" cy="375" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <path d="M 50 390 L 60 390 L 55 405 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <!-- 右耳外轮廓 -->
+    <path d="M 300 210 Q 350 200 365 260 Q 370 310 345 340 Q 325 355 305 330 Q 295 300 300 260" fill="url(#gold-grad)" stroke="#8B6914" stroke-width="2"/>
+    <!-- 右耳卷云纹（青绿） -->
+    <path d="M 320 240 Q 340 235 345 260 Q 348 280 330 285 Q 315 288 312 270 Q 310 255 325 252" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+    <path d="M 328 265 Q 332 275 322 278" fill="none" stroke="#1E3A2C" stroke-width="1.5"/>
+    <!-- 右耳珠串耳坠（对称） -->
+    <line x1="345" y1="340" x2="345" y2="390" stroke="#8B6914" stroke-width="2"/>
+    <circle cx="345" cy="345" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="345" cy="355" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="345" cy="365" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <circle cx="345" cy="375" r="3" fill="url(#gold-grad)" stroke="#8B6914"/>
+    <path d="M 340 390 L 350 390 L 345 405 Z" fill="url(#green-grad)" stroke="#1E3A2C" stroke-width="1.5"/>
+  </g>
+</svg>
