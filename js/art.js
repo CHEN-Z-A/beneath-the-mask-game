@@ -126,7 +126,18 @@ const Art = {
       mouth: `<rect x="72" y="53" width="176" height="42" rx="7" fill="url(#stone-${uid})" stroke="#84978F" stroke-width="7"/><path d="M96 74 L224 74" stroke="#11191C" stroke-width="8"/><path d="M113 58 L107 90 M207 58 L213 90" stroke="#C29142" stroke-width="3" opacity=".6"/>`
     };
     const shapes = theme === 'watch' ? watch : theme === 'smile' ? smile : silence;
-    return `<svg viewBox="0 0 320 140" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    const viewBoxes = {
+      watch: {
+        eyebrow: '0 5 320 115', eye: '0 5 320 110', nose: '120 0 80 140', mouth: '55 30 210 85'
+      },
+      smile: {
+        eyebrow: '0 15 320 105', eye: '0 15 320 105', nose: '125 0 70 140', mouth: '55 35 210 105'
+      },
+      silence: {
+        eyebrow: '0 30 320 80', eye: '0 35 320 90', nose: '120 0 80 140', mouth: '55 35 210 80'
+      }
+    };
+    return `<svg viewBox="${viewBoxes[theme][type]}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <defs>
         <linearGradient id="gold-${uid}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#FFE08A"/><stop offset=".5" stop-color="#D7A83D"/><stop offset="1" stop-color="#8E5B1D"/></linearGradient>
         <linearGradient id="pat-${uid}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#85C6A5"/><stop offset=".5" stop-color="#2F8B79"/><stop offset="1" stop-color="#175047"/></linearGradient>
@@ -136,6 +147,47 @@ const Art = {
       </defs>
       ${shapes[type] || ''}
     </svg>`;
+  },
+
+  /* ---------- 拼接页统一坐标：与面具线稿共用 400x520 画布 ---------- */
+  assemblyLayout(theme = 'authority') {
+    const layouts = {
+      authority: {
+        eyebrow: { x: 100, y: 218, width: 200, height: 50, hit: { x: 100, y: 212, width: 200, height: 62 } },
+        eye:     { x: 110, y: 250, width: 180, height: 60, hit: { x: 90, y: 246, width: 220, height: 70 } },
+        nose:    { x: 170, y: 255, width: 60, height: 105, hit: { x: 160, y: 286, width: 80, height: 82 } },
+        mouth:   { x: 135, y: 358, width: 130, height: 52, hit: { x: 120, y: 354, width: 160, height: 68 } }
+      },
+      watch: {
+        eyebrow: { x: 104, y: 170, width: 192, height: 70, hit: { x: 100, y: 172, width: 200, height: 70 } },
+        eye:     { x: 18, y: 218, width: 364, height: 92, hit: { x: 74, y: 232, width: 252, height: 80 } },
+        nose:    { x: 168, y: 210, width: 64, height: 160, hit: { x: 160, y: 286, width: 80, height: 86 } },
+        mouth:   { x: 128, y: 362, width: 144, height: 48, hit: { x: 120, y: 354, width: 160, height: 70 } }
+      },
+      smile: {
+        eyebrow: { x: 100, y: 194, width: 200, height: 58, hit: { x: 100, y: 194, width: 200, height: 68 } },
+        eye:     { x: 106, y: 238, width: 188, height: 66, hit: { x: 90, y: 238, width: 220, height: 76 } },
+        nose:    { x: 170, y: 236, width: 60, height: 128, hit: { x: 160, y: 286, width: 80, height: 86 } },
+        mouth:   { x: 126, y: 356, width: 148, height: 90, hit: { x: 116, y: 360, width: 168, height: 78 } }
+      },
+      silence: {
+        eyebrow: { x: 102, y: 216, width: 196, height: 54, hit: { x: 100, y: 210, width: 200, height: 66 } },
+        eye:     { x: 106, y: 264, width: 188, height: 56, hit: { x: 90, y: 256, width: 220, height: 72 } },
+        nose:    { x: 166, y: 236, width: 68, height: 140, hit: { x: 158, y: 292, width: 84, height: 88 } },
+        mouth:   { x: 120, y: 382, width: 160, height: 50, hit: { x: 112, y: 376, width: 176, height: 68 } }
+      }
+    };
+    return layouts[theme] || layouts.authority;
+  },
+
+  assemblyPieceSvg(type, theme = 'authority') {
+    const box = this.assemblyLayout(theme)[type];
+    if (!box) return '';
+    const nestedPiece = this.pieceSvg(type, theme).replace(
+      '<svg ',
+      `<svg x="${box.x}" y="${box.y}" width="${box.width}" height="${box.height}" `
+    );
+    return `<svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" data-assembly-theme="${theme}" data-assembly-part="${type}">${nestedPiece}</svg>`;
   },
 
   /* ========== 碎片（三星堆部位裁剪） ========== */
@@ -236,9 +288,11 @@ const Art = {
         <defs><linearGradient id="watch-line" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8ED2BC"/><stop offset="1" stop-color="#CDA63A"/></linearGradient></defs>
         <path d="M154 142 L158 28 Q164 14 176 26 L184 142 M216 142 L224 26 Q236 14 242 28 L246 142" fill="none" stroke="url(#watch-line)" stroke-width="3" stroke-dasharray="7 6"/>
         <path d="M116 140 Q200 96 284 140 L302 420 Q268 486 200 500 Q132 486 98 420 Z" fill="none" stroke="url(#watch-line)" stroke-width="3" stroke-dasharray="7 6"/>
+        <g class="mask-feature-guide">
         <path d="M18 256 Q94 208 184 246 L172 302 Q88 278 18 292 Z M382 256 Q306 208 216 246 L228 302 Q312 278 382 292 Z" fill="none" stroke="#D6B34A" stroke-width="3" stroke-dasharray="5 5"/>
         <circle cx="130" cy="270" r="18" fill="none" stroke="#8ED2BC" stroke-width="2" stroke-dasharray="4 4"/><circle cx="270" cy="270" r="18" fill="none" stroke="#8ED2BC" stroke-width="2" stroke-dasharray="4 4"/>
         <path d="M178 210 L222 210 L216 348 L200 370 L184 348 Z M142 384 Q200 366 258 384" fill="none" stroke="#D6B34A" stroke-width="3" stroke-dasharray="5 5"/>
+        </g>
       </svg>`;
     }
     if (theme === 'smile') {
@@ -246,10 +300,12 @@ const Art = {
         <defs><linearGradient id="smile-line" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#E8C260"/><stop offset=".55" stop-color="#88B08C"/><stop offset="1" stop-color="#B95332"/></linearGradient></defs>
         <path d="M200 34 Q224 72 220 122 M172 126 Q120 96 104 54 Q154 58 190 108 M228 126 Q280 96 296 54 Q246 58 210 108" fill="none" stroke="url(#smile-line)" stroke-width="3" stroke-dasharray="7 6"/>
         <ellipse cx="200" cy="304" rx="126" ry="190" fill="none" stroke="url(#smile-line)" stroke-width="3" stroke-dasharray="7 6"/>
+        <g class="mask-feature-guide">
         <path d="M104 228 Q150 190 188 232 M296 228 Q250 190 212 232" fill="none" stroke="#78A985" stroke-width="5" stroke-dasharray="5 5"/>
         <path d="M112 274 Q150 232 188 270 Q150 254 118 286 M288 274 Q250 232 212 270 Q250 254 282 286" fill="none" stroke="#D9AE44" stroke-width="3" stroke-dasharray="5 5"/>
         <path d="M188 248 Q200 234 212 248 L216 342 Q200 358 184 342 Z" fill="none" stroke="#D9AE44" stroke-width="3" stroke-dasharray="5 5"/>
         <path d="M132 366 Q200 446 268 366 Q244 432 200 440 Q156 432 132 366 Z" fill="none" stroke="#B95332" stroke-width="4" stroke-dasharray="5 5"/>
+        </g>
       </svg>`;
     }
     if (theme === 'silence') {
@@ -258,11 +314,13 @@ const Art = {
         <path d="M118 142 L118 94 L148 94 L148 62 L184 62 L184 26 L216 26 L216 62 L252 62 L252 94 L282 94 L282 142" fill="none" stroke="url(#silence-line)" stroke-width="3" stroke-dasharray="7 6"/>
         <path d="M102 140 L298 140 L316 422 Q276 490 200 500 Q124 490 84 422 Z" fill="none" stroke="url(#silence-line)" stroke-width="3" stroke-dasharray="7 6"/>
         <path d="M84 212 L44 220 L52 370 L92 362 M316 212 L356 220 L348 370 L308 362" fill="none" stroke="#587E78" stroke-width="3" stroke-dasharray="6 6"/>
+        <g class="mask-feature-guide">
         <path d="M108 226 L188 234 L182 264 L116 258 Z M292 226 L212 234 L218 264 L284 258 Z" fill="none" stroke="#87A59C" stroke-width="4" stroke-dasharray="5 5"/>
         <path d="M122 274 Q154 304 184 278 M278 274 Q246 304 216 278" fill="none" stroke="#3E625F" stroke-width="4" stroke-dasharray="5 5"/>
         <path d="M182 238 L218 238 L224 352 L200 374 L176 352 Z" fill="none" stroke="#A67A3C" stroke-width="3" stroke-dasharray="5 5"/>
         <rect x="128" y="386" width="144" height="38" rx="5" fill="none" stroke="#7F9990" stroke-width="3" stroke-dasharray="5 5"/>
         <path d="M150 405 L250 405" stroke="#A67A3C" stroke-width="3" stroke-dasharray="5 5"/>
+        </g>
       </svg>`;
     }
     const uid = 'outline';
@@ -291,6 +349,7 @@ const Art = {
   <path d="M 102 190 Q 58 180 40 220 Q 24 266 42 316 Q 58 350 94 342 Q 108 316 104 266" fill="none" stroke="url(#gold-${uid})" stroke-width="2" stroke-dasharray="5 5" opacity="0.65"/>
   <path d="M 298 190 Q 342 180 360 220 Q 376 266 358 316 Q 342 350 306 342 Q 292 316 296 266" fill="none" stroke="url(#gold-${uid})" stroke-width="2" stroke-dasharray="5 5" opacity="0.65"/>
   <path d="M 54 290 L 54 390 M 346 290 L 346 390 M 45 390 L 63 390 M 337 390 L 355 390" fill="none" stroke="url(#green-${uid})" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
+  <g class="mask-feature-guide">
   <!-- 眉槽位参考 -->
   <path d="M 118 230 Q 153 220 188 232 L 185 249 Q 151 240 120 246 Z" fill="none" stroke="url(#green-${uid})" stroke-width="2" stroke-dasharray="4 4" opacity="0.7"/>
   <path d="M 282 230 Q 247 220 212 232 L 215 249 Q 249 240 280 246 Z" fill="none" stroke="url(#green-${uid})" stroke-width="2" stroke-dasharray="4 4" opacity="0.7"/>
@@ -302,6 +361,7 @@ const Art = {
   <path d="M 184 326 L 184 350 L 216 350 L 216 326" fill="none" stroke="#B8861E" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
   <!-- 嘴槽位参考 -->
   <line x1="152" y1="378" x2="248" y2="378" stroke="#5C4210" stroke-width="3" stroke-dasharray="4 4" opacity="0.7"/>
+  </g>
 </svg>`;
   },
 

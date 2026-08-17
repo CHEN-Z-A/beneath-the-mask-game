@@ -557,8 +557,9 @@ class Game {
     root.innerHTML = `
       <div class="assemble-scene">
         <div class="assemble-left">
-          <div class="assemble-board">
+          <div class="assemble-board" id="assemble-board">
             <div class="board-outline" id="board-outline">${Art.maskOutlineSvg(this.level.theme)}</div>
+            <div class="assembly-piece-layers" id="assembly-piece-layers"></div>
             <div id="slot-container"></div>
           </div>
         </div>
@@ -571,24 +572,31 @@ class Game {
 
     this.assemble = { placed: 0, errorStreak: 0, step: 0, order: cfg.slots.slice() };
 
-    // 槽位（对应三星堆面具：眉 45% / 眼 52% / 鼻 59% / 口 72%）
-    const slotPos = {
-      // 收拢到新面具轮廓的面部区域，避免五官落到耳廓/冠饰之外
-      slot_eyebrow: { x: 50, y: 44 },
-      slot_eye: { x: 50, y: 51 },
-      slot_nose: { x: 50, y: 59 },
-      slot_mouth: { x: 50, y: 66 }
-    };
-
+    // 引导态与完成态共用同一套 400×520 面具坐标，避免缩放后错位。
+    const layout = Art.assemblyLayout(this.level.theme);
+    const pieceLayers = this.el('assembly-piece-layers');
     const sc = this.el('slot-container');
     cfg.slots.forEach(s => {
-      const p = slotPos[s.id];
+      const type = s.fragment.replace('f_', '');
+      const box = layout[type];
+      const hit = box.hit || box;
+
+      const pieceLayer = document.createElement('div');
+      pieceLayer.className = 'assembly-piece-layer';
+      pieceLayer.id = 'assembly-piece-' + s.id;
+      pieceLayer.dataset.part = type;
+      pieceLayer.innerHTML = Art.assemblyPieceSvg(type, this.level.theme);
+      pieceLayers.appendChild(pieceLayer);
+
       const div = document.createElement('div');
       div.className = 'mask-slot';
       div.id = s.id;
       div.dataset.slot = s.id;
-      div.style.left = p.x + '%';
-      div.style.top = p.y + '%';
+      div.dataset.part = type;
+      div.style.left = ((hit.x + hit.width / 2) / 400 * 100) + '%';
+      div.style.top = ((hit.y + hit.height / 2) / 520 * 100) + '%';
+      div.style.width = (hit.width / 400 * 100) + '%';
+      div.style.height = (hit.height / 520 * 100) + '%';
       div.style.transform = 'translate(-50%, -50%)';
       sc.appendChild(div);
     });
@@ -754,8 +762,8 @@ class Game {
     this.sfx('chime');
     dragEl.remove();
     slotEl.classList.add('filled');
-    slotEl.innerHTML = `
-      <div class="slot-svg">${Art.pieceSvg(slot.fragment.replace('f_', ''), this.level.theme)}</div>`;
+    const pieceLayer = this.el('assembly-piece-' + slot.id);
+    if (pieceLayer) pieceLayer.classList.add('placed');
     const tag = this.el('tag-' + slot.id);
     if (tag) tag.classList.add('done');
     this.levelState.score.assembleAccuracy += 100 / this.level.assembleConfig.slots.length;
@@ -775,6 +783,8 @@ class Game {
       this.setTimer(() => {
         const board = this.el('board-outline');
         if (board) {
+          const assembleBoard = this.el('assemble-board');
+          if (assembleBoard) assembleBoard.classList.add('complete');
           board.innerHTML = Art.fullMaskSvg(this.level.theme);
           board.classList.remove('glow');
         }

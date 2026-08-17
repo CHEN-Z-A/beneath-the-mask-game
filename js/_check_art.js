@@ -12,6 +12,9 @@ const checks = [
   ...['watch', 'smile', 'silence'].flatMap(theme => ['eyebrow', 'eye', 'nose', 'mouth'].map(type => [
     `pieceSvg(${type}, ${theme})`, A.pieceSvg(type, theme)
   ])),
+  ...['authority', 'watch', 'smile', 'silence'].flatMap(theme => ['eyebrow', 'eye', 'nose', 'mouth'].map(type => [
+    `assemblyPieceSvg(${type}, ${theme})`, A.assemblyPieceSvg(type, theme)
+  ])),
   ['fullMaskSvg', A.fullMaskSvg()],
   ['fullMaskSvg(watch)', A.fullMaskSvg('watch')],
   ['fullMaskSvg(smile)', A.fullMaskSvg('smile')],
